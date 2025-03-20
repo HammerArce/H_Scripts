@@ -1,0 +1,43 @@
+SELECT *
+FROM pg_catalog.pg_tables
+WHERE schemaname != 'pg_catalog' AND 
+    schemaname != 'information_schema';
+    
+select * from cfvp.tbl_adquiriente where adqu_pk_identificacion = '52179774';
+
+select * from cfvp.tbl_adquiriente where adqu_pk_identificacion = '52179774' and
+	adqu_pk_codigo_facturador = 'F0242';
+	
+delete from cfvp.tbl_adquiriente where adqu_pk_identificacion = '52179774' and
+	adqu_pk_codigo_facturador = 'F0242';
+	
+	
+	
+select * from tbl_facturador tf where fact_identificacion = '900342064';
+	
+	
+SELECT DISTINCT doc.doel_pk_codigo_facturador, fac.fact_identificacion, fac.fact_nombre 
+FROM cfvp.tbl_documento_electronico as doc
+INNER JOIN cfvp.tbl_facturador as fac ON doc.doel_pk_codigo_facturador=fac.fact_pk_codigo
+where doc.doel_codigo_moneda <> 'COP' and (doc.doel_fecha_recepcion between '2023-11-01' AND '2024-04-30');
+
+
+-----modificacion contasena y estado
+BEGIN TRANSACTION;
+UPDATE cfvp.tbl_configuracion_correo 
+set 
+coco_contrasena = 'hroc nmjg hqmp scmz',
+coco_estado = 'A'
+WHERE coco_pk_codigo_facturador='F0093' AND coco_pk_consecutivo=3;
+ROLLBACK;
+
+-------Cuando se paraliza una transaccion
+END;
+
+--------Buscar el nombre de una columna
+select * from information_schema.columns c
+where c.column_name ilike '%usua_codigo_facturador%'
+order by c.table_name;
+
+--------limite
+select * from tbl_usuario tu limit(5);

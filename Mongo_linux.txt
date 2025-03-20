@@ -1,0 +1,34 @@
+service mongod status
+ps -efl | grep mongo
+
+cat /media/mongo/certihuella/log/mongod.log |grep "Fri Nov  8"
+cat /media/mongo/certihuella/log/mongod.log |grep "Fri Nov  8"
+
+mongo
+rs.status()
+
+while true; do cat /media/mongo/certihuella/log/mongod.log |grep "Fri Nov  8"; sleep 5; done
+while true; do tail -n30 /media/mongo/certihuella/log/mongod.log; sleep 5; done
+
+
+-----------reiniciar
+service mongod restart
+
+08/11
+3pm estoy a  punto de eliminar el indice "clientid_1_sucursalid_1_fecha_1" en el servidor principal, ya que ocurre un error al crearlo en
+el servidor replica "BTSQLLINCHBDARP3", (puede ser eso o que se queda colgado por recursos?)
+
+me conecto al server principal y procedo con los pasos:
+mongo
+db.adminCommand( { listDatabases: 1, nameOnly: true} )
+use certihuellareportes;
+db.consumoDetallado.getIndexes()
+
+db.consumoDetallado.dropIndex( "clientid_1_sucursalid_1_fecha_1" );
+respuesta: 3:23pm
+{ "nIndexesWas" : 7, "ok" : 1 }
+
+Se crearon unos indices en la bd principal la cual se replicó a las secundarias, el error en "BTSQLLINCHBDARP3" es que "se recomienda establecer un límite alto para el límite de archivos abiertos" porque en el proceso de sincronizacion pues abrirá en segundo plano una cantidad de archivos que supera la cantidad soportada por el sistema operativo del servidor replica.
+
+tail -n 100 cat /home/App/certihuella/data/log/mongod.log
+cat /home/App/certihuella/data/log/mongod.log |grep "Fri Nov  8"
