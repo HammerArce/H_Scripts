@@ -1,0 +1,171 @@
+/*SQL SERVER COMMANDS
+
+- Master db, registra info a nivel de sistema, cuentas de inicio de sesion, servidores vinculados, etc
+- Model db, plantilla para las bases de datos que se crean
+- msdb db, db usada por el SQL server Agent, maneja los jobs, programacion de alertas y tareas programadas
+- temp db, db usada como almacenamiento temporal de objetos y tablas*/
+
+-- https://www.geeksforgeeks.org/sql-ddl-dql-dml-dcl-tcl-commands/
+
+/*-------Tipos de datos
+char: ancho fijo
+varchar: ancho variable
+text: solo texto
+nchar: ancho fijo, si uso menos de los estipulados el sistema ahorra ese espacio
+nvarchar: ancho variable, si uso menos de los estipulados el sistema ahorra ese espacio
+bit: valores 1 y 0
+int: valores entre -2,147,483,648 y 2,147,483,647
+bitint: valores entre - 9,223,372,036,854,775,808 y 9,223,372,036,854,775,807
+decimal: valores entre -10^38 + 1 y 10^38 - 1 (unicamente valores decimales)
+numeric: valores entre -10^38 + 1 y 10^38 - 1 (permite aumentar de valores enteros a decimales)
+money: valores entre - 9,223,372,036,854,775,808 y 9,223,372,036,854,775,807 (bd de info financiera)
+float: valores entre -1.79E + 308 a 1.79E + 308*/
+
+---------------------------------------------------------
+Clave segura finesa solicitud log
+select * from sobreflexfinesadb.dbo.RequestForm  where Request like '%CC%'
+
+
+---------top amount select
+select top 100 * from myTable
+
+
+------------SELECT in
+select * from dbo.CEH_LOG_DYNAMICS WHERE ORDEN_PEDIDO_ID IN ('1953516','1964555'......etc);
+
+------------table structure
+exec sp_help 'YourTable'
+
+
+----------SAFE UPDATE
+Select * from CEH_SOLICITUD_TITULAR where ORDEN_PEDIDO_ID = '2057776';
+
+begin tran
+UPDATE CEH_SOLICITUD_TITULAR
+set CIUDAD_ID = 11001
+where ORDEN_PEDIDO_ID = '2057776';
+Rollback tran
+
+
+
+-----------------DESMARCAR  OP'S
+
+select * from dbo.CEH_ORDEN_PEDIDO_CUPO where ORDEN_PEDIDO_ID ='1793836';
+
+BEGIN TRAN
+DELETE FROM CEH_ORDEN_PEDIDO_CUPO where ORDEN_PEDIDO_ID ='1793836';
+ROLLBACK TRAN
+
+-----------------revisar estado de conexiones
+select login_name,
+	COUNT(session_id) AS session_count
+FROM sys.dm_exec_sessions
+GROUP BY login_name;
+
+-----------------Query with multiple WHERE and count
+select COUNT(*) from CEH_RESULTADO_IDENTIDAD where (FECHA_RESPUESTA between '2024-01-01' AND '2024-07-02')
+AND APRUEBA = 1;
+
+-----------------Find a specific column in all tables
+select * from INFORMATION_SCHEMA.COLUMNS 
+where COLUMN_NAME like '%ColumnName%' 
+order by TABLE_NAME;
+
+
+-----------------Buscar errores agrupados
+SELECT ORDEN_PEDIDO_ID, OBSERVACIONES from CEH_LOG_DYNAMICS where ORDEN_PEDIDO_ID in (OPs)
+group by ORDEN_PEDIDO_ID, OBSERVACIONES
+order by ORDEN_PEDIDO_ID;
+
+-----------------Buscar ultimo estado op
+SELECT ORDEN_PEDIDO_ID, NOMBRE_METODO FROM DYNAMICS.CEH_VALORES_METODO 
+	WHERE VALOR_METODO_ID IN (SELECT MAX(VALOR_METODO_ID) FROM [SSPS].[DYNAMICS].[CEH_VALORES_METODO]
+	WHERE [ORDEN_PEDIDO_ID] IN (OPs) GROUP BY ORDEN_PEDIDO_ID );
+	
+	
+-----------------Buscar en procedimientos y vistas donde se invoca una funcion en especifico
+  declare @SearchValue as varchar(50)
+  set @SearchValue = 'function_name'
+  SELECT DISTINCT
+  s.name+'.'+o.name AS Object_Name,o.type_desc
+  FROM sys.sql_modules        m
+  INNER JOIN sys.objects  o ON m.object_id=o.object_id
+  INNER JOIN sys.schemas  s ON o.schema_id=s.schema_id
+  WHERE m.definition Like '%'+@SearchValue+'%'
+  -- AND o.Type='P'  --<uncomment if you only want to search procedures
+  ORDER BY 1
+  
+  
+-----------------Version/licencia
+Select @@VERSION
+
+
+SELECT SERVERPROPERTY('LicenseType') AS 'Tipo de Licencia', SERVERPROPERTY('Licensee') AS 'Titular de la Licencia', SERVERPROPERTY('NumLicenses') AS 'Número de Licencias';
+
+-----------------ultima modificacion de un procedimiento
+SELECT name, create_date, modify_date 
+FROM sys.objects
+WHERE type = 'P'
+and name = 'CESP_REPORTE_FACTURACION_SOLICITUDES'
+ORDER BY modify_date DESC
+
+
+---------------check users and querys statues
+method 1
+EXEC sp_who2;
+
+method 2 (favorite)
+SELECT 
+    spid,
+    blocked,
+    loginame,
+    --dbname,
+    cpu,
+    physical_io,
+    lastwaittype,
+    cmd,
+    status,
+    hostname,
+    program_name,
+    login_time
+FROM sys.sysprocesses
+ORDER BY cpu DESC;
+
+method 2 (all info)
+select * from sys.sysprocesses;
+
+new method by (https://www.sqlskills.com/blogs/paul/script-open-transactions-with-text-and-plans/)
+SELECT
+    [s_tst].[session_id],
+    [s_es].[login_name] AS [Login Name],
+    DB_NAME (s_tdt.database_id) AS [Database],
+    [s_tdt].[database_transaction_begin_time] AS [Begin Time],
+    [s_tdt].[database_transaction_log_bytes_used] AS [Log Bytes],
+    [s_tdt].[database_transaction_log_bytes_reserved] AS [Log Rsvd],
+    [s_est].text AS [Last T-SQL Text],
+    [s_eqp].[query_plan] AS [Last Plan]
+FROM
+    sys.dm_tran_database_transactions [s_tdt]
+JOIN
+    sys.dm_tran_session_transactions [s_tst]
+ON
+    [s_tst].[transaction_id] = [s_tdt].[transaction_id]
+JOIN
+    sys.[dm_exec_sessions] [s_es]
+ON
+    [s_es].[session_id] = [s_tst].[session_id]
+JOIN
+    sys.dm_exec_connections [s_ec]
+ON
+    [s_ec].[session_id] = [s_tst].[session_id]
+LEFT OUTER JOIN
+    sys.dm_exec_requests [s_er]
+ON
+    [s_er].[session_id] = [s_tst].[session_id]
+CROSS APPLY
+    sys.dm_exec_sql_text ([s_ec].[most_recent_sql_handle]) AS [s_est]
+OUTER APPLY
+    sys.dm_exec_query_plan ([s_er].[plan_handle]) AS [s_eqp]
+ORDER BY
+    [Begin Time] ASC;
+GO
