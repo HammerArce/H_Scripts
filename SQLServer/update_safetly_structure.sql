@@ -1,0 +1,8 @@
+----------SAFE UPDATE
+Select * from CEH_SOLICITUD_TITULAR where ORDEN_PEDIDO_ID = '2057776';
+
+begin tran
+UPDATE CEH_SOLICITUD_TITULAR
+set CIUDAD_ID = 11001
+where ORDEN_PEDIDO_ID = '2057776';
+Rollback tran
