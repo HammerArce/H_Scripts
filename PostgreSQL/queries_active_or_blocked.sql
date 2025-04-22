@@ -30,3 +30,4 @@ JOIN  pg_catalog.pg_locks         blocking_locks
 JOIN  pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid;
 --This query will show the process that is holding the lock, the process that is waiting for the lock, the query that is being executed by the waiting process, and the query that is being executed by the process holding the lock.
 
+--https://minervadb.xyz/how-to-check-which-queries-are-active-or-blocked-in-postgresql/#:~:text=Internals%2C%20PostgreSQL%20Performance-,How%20to%20check%20which%20queries%20are%20active%20or%20blocked%20in,state%2C%20and%20many%20other%20details.
