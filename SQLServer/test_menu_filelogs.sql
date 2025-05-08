@@ -1,33 +1,35 @@
-/*
-Hammer  Santamaria
-2025
-Menu Log sizes
-*/
---Declare
-DECLARE @DatabaseN VARCHAR(max);
-DECLARE @FilegroupN VARCHAR(max);
-DECLARE @Usagetype VARCHAR(max);
-DECLARE @FilenameN VARCHAR(max);
-DECLARE @SizeN INTEGER;
+BEGIN
+
+	--Hammer  Santamaria
+	--2025
+	--Menu Log sizes
+use master;
+DECLARE @DatabaseN AS VARCHAR(max);
+DECLARE @FilegroupN AS VARCHAR(max);
+DECLARE @Usagetype AS VARCHAR(max);
+DECLARE @FilenameN AS VARCHAR(max);
+DECLARE @Metodo_Manual AS VARCHAR(max);
+SET @Metodo_Manual = 'Cambiar parametros de forma Manual';
+
+END
 -------------------SELECTION MENU------------------------------
-DECLARE @total_filegroup as bit =1
-DECLARE @total_by_usage as bit =0 -- set to 0 to skip first part
-DECLARE @files_by_filegroup as bit =0 -- set to 0 to skip second part
-DECLARE @files_by_usage as bit =  0
-DECLARE @files_by_filename as bit = 0
-----------Modifications
-DECLARE @growth_file as bit =  0
-DECLARE @Create_file as bit = 0
+-- set to 0 to skip or 1 to activate
+DECLARE @total_filegroup as bit = 1
+DECLARE @total_by_usage as bit = 1 
+DECLARE @files_by_filegroup as bit =1
+DECLARE @files_by_usage as bit =  1
+DECLARE @files_by_filename as bit = 1
 -----------Parameters----------------
-SET @DatabaseN = 'sqlusu';
-SET @FilegroupN = '';
+SET @DatabaseN = 'Tren_Digital';
+SET @FilegroupN = 'FG_2025';
 SET @Usagetype = 'log only';
 SET @FilenameN = '';
-SET @SizeN = 500;
 --*************************************************
+
+--Declare table info
+BEGIN
 --PRINT @V_inst_ip_server
-use master;
-go
+
 -- Drop temporary table if it exists
 IF OBJECT_ID('tempdb..#info') IS NOT NULL
        DROP TABLE #info;
@@ -64,8 +66,10 @@ else NULL end),
 ''usage'' = (case status & 0x40 when 0x40 then ''log only'' else ''data only'' end)
 from sysfiles
 ';
---***************************************************
-
+END
+--------------------------------------
+--total_filegroup
+BEGIN
 IF @total_filegroup = 1
 BEGIN
 SELECT @@servername servername, databasename, filegroup, sum(sizeMB) as 'sizeMB', sum(freeSpaceMB) as 'freeSpaceMB',
@@ -74,7 +78,10 @@ WHERE databasename =@DatabaseN
 and filegroup = @FilegroupN
 group by databasename, filegroup
 END
-
+END
+------------------------------------
+--total_by_usage
+BEGIN
 IF @total_by_usage = 1
 BEGIN
 SELECT @@servername servername, databasename, usage, sum(sizeMB) as 'sizeMB', sum(freeSpaceMB) as 'freeSpaceMB',
@@ -83,7 +90,10 @@ WHERE databasename =@DatabaseN
 and usage= @Usagetype
 group by databasename, usage
 END
-
+END
+-------------------------------------
+--files by filegroup
+BEGIN
 IF @files_by_filegroup = 1
 BEGIN
 SELECT * FROM #info
@@ -96,7 +106,10 @@ WHERE    1=1
         --and filename NOT LIKE ('P:\Data2_5\%') 
         --and usage = 'data only'
 END
-
+END
+-----------------------------------
+--files by usage
+BEGIN
 IF @files_by_usage = 1
 BEGIN
 SELECT * FROM #info
@@ -109,16 +122,18 @@ WHERE    1=1
         --and filename NOT LIKE ('P:\Data2_5\%') 
         and usage = @Usagetype 
 END
-
-IF @growth_file = 1
-BEGIN
-ALTER DATABASE [@DatabaseN] MODIFY FILE (NAME = [@FilenameN], SIZE = [@SizeN] MB)
 END
 
-IF @Create_file = 1
-BEGIN
+--*****************************Modifications*********************
+
+--Add Size to File
+/*
+ALTER DATABASE [@DatabaseN] MODIFY FILE (NAME = [@FilenameN], SIZE = 100 MB)
+*/
+-------------------------------
+--Create New File
 /*
 ALTER DATABASE [@DatabaseN] ADD FILE ( NAME = N'Recargas4', FILENAME = N'F:\Data\Recargas4.ndf',  --CREAR UN NUEVO DATAFILE 
-SIZE = 4GB , FILEGROWTH = 256MB ) TO FILEGROUP [PRIMARY]*/
-print ('¡Modificar parametros de forma manual!')
-END
+SIZE = 4GB , FILEGROWTH = 256MB ) TO FILEGROUP [PRIMARY]
+*/
+
