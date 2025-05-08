@@ -125,10 +125,10 @@ END
 END
 
 --*****************************Modifications*********************
-
+-------------------------------
 --Add Size to File
 /*
-ALTER DATABASE [@DatabaseN] MODIFY FILE (NAME = [@FilenameN], SIZE = 100 MB)
+ALTER DATABASE [smsws_db] MODIFY FILE (NAME = N'smsws_db_Indices5', SIZE = 16293 MB)
 */
 -------------------------------
 --Create New File
@@ -136,4 +136,60 @@ ALTER DATABASE [@DatabaseN] MODIFY FILE (NAME = [@FilenameN], SIZE = 100 MB)
 ALTER DATABASE [@DatabaseN] ADD FILE ( NAME = N'Recargas4', FILENAME = N'F:\Data\Recargas4.ndf',  --CREAR UN NUEVO DATAFILE 
 SIZE = 4GB , FILEGROWTH = 256MB ) TO FILEGROUP [PRIMARY]
 */
-
+-------------------------------
+--Shrink File
+/*
+USE tempdb;
+GO
+DBCC SHRINKFILE (templog, 256);
+GO
+*/
+-------------------------------
+-- add or remove growth in the DATAFILE
+/*
+ALTER DATABASE [E2E_PagoNoAplicado_PROD] MODIFY FILE (NAME = N'E2E_PagoNoAplicado_PROD', FILEGROWTH = 64MB) 
+*/
+-------------------------------
+-- add LOGFILE
+/*
+ALTER DATABASE [Recargas] ADD LOG FILE ( NAME = N'provisional_log1', FILENAME = N'N:\Log\provisional_log1.ldf', 
+SIZE = 512 MB , FILEGROWTH = 64 MB )
+GO
+*/
+-------------------------------
+-- see database recovery mode 
+/*
+SELECT    name,
+        DATABASEPROPERTYEX(name, 'RECOVERY') AS modo_recuperacion
+FROM    master..sysdatabases ORDER BY modo_recuperacion, name
+*/
+-------------------------------
+-- Shrink file
+/*
+SELECT distinct(databasename), COUNT(filename)datafile, IIF(filegroup='PRIMARY', 'PRIMARY', 'LOG')filegroup FROM #info
+WHERE    databasename not in ('master', 'model', 'msdb', 'tempdb')
+group by databasename, filegroup
+ 
+select * from sysdatabases //VIEJAS
+select name, log_reuse_wait_desc, recovery_model_desc from sys.databases // NUEVAS
+USE tempdb
+GO
+CHECKPOINT;
+GO
+ 
+DBCC FREESESSIONCACHE;
+GO
+ 
+DBCC FREEPROCCACHE;
+GO
+ 
+DBCC FREESYSTEMCACHE ('ALL');
+GO
+ 
+DBCC DROPCLEANBUFFERS;
+GO
+DBCC SHRINKFILE (temp9, 128);
+DBCC SHRINKFILE (temp9, EMPTYFILE);
+ 
+ALTER DATABASE HWI_Admin SET RECOVERY SIMPLE 
+*/
