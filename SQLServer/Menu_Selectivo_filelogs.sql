@@ -14,11 +14,11 @@ GO
 -- >> VARIABLES
 -- =======================================================================================
 DECLARE 
-    @TargetDatabase        VARCHAR(128) = 'AppVentasMovistar',       -- Ejemplo: 'AppVentasMovistar', o NULL para todas las bases de datos.
-    @TargetFilegroup       VARCHAR(128) = 'PRIMARY',                 -- Example: 'PRIMARY' Filegroup to filter in queries
-    @TargetUsage           VARCHAR(25)  = 'log only',                -- Example: 'data only' or 'log only'
-    @TargetFilenameLike    VARCHAR(1000) = 'I:\DataRiv5\%',          -- Example: 'I:\DataRiv5\%' For LIKE filtering on filename
-    @TargetFilenameNotLike VARCHAR(1000) = 'P:\Data2_5\%',           -- Example: 'P:\Data2_5\%' For NOT LIKE filtering on filename
+    @TargetDatabase        VARCHAR(128) = NULL,       -- Ejemplo: 'AppVentasMovistar', o NULL para todas las bases de datos.
+    @TargetFilegroup       VARCHAR(128) = NULL,                 -- Example: 'PRIMARY' Filegroup to filter in queries
+    @TargetUsage           VARCHAR(25)  = NULL,                -- Example: 'data only' or 'log only'
+    @TargetFilenameLike    VARCHAR(1000) = NULL,          -- Example: 'I:\DataRiv5\%' For LIKE filtering on filename
+    @TargetFilenameNotLike VARCHAR(1000) = NULL,           -- Example: 'P:\Data2_5\%' For NOT LIKE filtering on filename
     @ShowGrowthFilesOnly   BIT = 0                                   -- 1 = Only files with growth, 0 = All
 -- =======================================================================================
 -- MENU DE SELECCION (set to 0 to skip or 1 to activate)
@@ -38,6 +38,7 @@ DECLARE
 -- =======================================================================================
 -- INICIO DE LA LÓGICA DEL SCRIPT (No es necesario modificar)
 -- =======================================================================================
+BEGIN
 /*-------------------- Drop temp table if it exists --------------------*/
 IF OBJECT_ID('tempdb..#info') IS NOT NULL
     DROP TABLE #info;
@@ -81,7 +82,6 @@ FROM sysfiles
 -- =======================================================================================
 -- Filtered Queries (No es necesario modificar)
 -- =======================================================================================
-BEGIN
 /*--------------------ALL FILES--------------------*/
 BEGIN
 IF @ALLDBFILES = 1
@@ -94,34 +94,38 @@ WHERE 1=1
     AND (@TargetFilenameLike IS NULL OR filename LIKE @TargetFilenameLike)
     AND (@TargetFilenameNotLike IS NULL OR filename NOT LIKE @TargetFilenameNotLike);
 END
-
+/*--------------------total_filegroup--------------------*/
 BEGIN
 IF @total_filegroup  = 1
 SELECT @@servername servername, databasename, filegroup, sum(sizeMB) as 'sizeMB', sum(freeSpaceMB) as 'freeSpaceMB',
 (sum(freeSpaceMB)/sum(sizeMB))*100 as 'freeSpacePct' FROM #info
-WHERE databasename =@TargetDatabase
-and filegroup = @TargetFilegroup
+WHERE (@TargetDatabase IS NULL OR databasename = @TargetDatabase)
+and (@TargetFilegroup IS NULL OR filegroup = @TargetFilegroup)
 group by databasename, filegroup
 END
+/*--------------------total_by_usage--------------------*/
 BEGIN
 IF @total_by_usage  = 1
 SELECT @@servername servername, databasename, usage, sum(sizeMB) as 'sizeMB', sum(freeSpaceMB) as 'freeSpaceMB',
 (sum(freeSpaceMB)/sum(sizeMB))*100 as 'freeSpacePct' FROM #info
-WHERE databasename =@DatabaseN
-and usage= @Usagetype
+WHERE databasename =@TargetDatabase
+and usage= @TargetUsage
 group by databasename, usage
 END
-IF @files_by_filegroup  =1
+/*--------------------files_by_filegroup--------------------*/
+BEGIN
+IF @files_by_filegroup  = 1
 SELECT * FROM #info
 WHERE    1=1
         --and (growthMB <> 0 or growthPct <> 0)
         --and databasename + ';' + ISNULL(filegroup, 'LOG') IN ('CM_TEL;PRIMARY')   
-        and filegroup = @FilegroupN
-        and databasename = @DatabaseN
+        and filegroup = @TargetFilegroup
+        and databasename = @TargetDatabase
         --and filename LIKE ('I:\DataRiv5\%') 
         --and filename NOT LIKE ('P:\Data2_5\%') 
         --and usage = 'data only'
 END
+/*--------------------files_by_usage--------------------*/
 BEGIN
 IF @files_by_usage =  1
 SELECT * FROM #info
@@ -129,11 +133,12 @@ WHERE    1=1
         --and (growthMB <> 0 or growthPct <> 0)
         --and databasename + ';' + ISNULL(filegroup, 'LOG') IN ('CM_TEL;PRIMARY')   
         --and filegroup = @FilegroupN
-        and databasename = @DatabaseN
+        and databasename = @TargetDatabase
         --and filename LIKE ('I:\DataRiv5\%') 
         --and filename NOT LIKE ('P:\Data2_5\%') 
-        and usage = @Usagetype 
+        and usage = @TargetUsage 
 END
+/*--------------------files_by_filename--------------------*/
 /*BEGIN
 IF @files_by_filename = 1
 END*/
