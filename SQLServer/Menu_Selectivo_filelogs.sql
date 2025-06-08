@@ -81,6 +81,7 @@ FROM sysfiles
 -- =======================================================================================
 -- Filtered Queries (No es necesario modificar)
 -- =======================================================================================
+BEGIN
 /*--------------------ALL FILES--------------------*/
 BEGIN
 IF @ALLDBFILES = 1
@@ -94,6 +95,49 @@ WHERE 1=1
     AND (@TargetFilenameNotLike IS NULL OR filename NOT LIKE @TargetFilenameNotLike);
 END
 
+BEGIN
+IF @total_filegroup  = 1
+SELECT @@servername servername, databasename, filegroup, sum(sizeMB) as 'sizeMB', sum(freeSpaceMB) as 'freeSpaceMB',
+(sum(freeSpaceMB)/sum(sizeMB))*100 as 'freeSpacePct' FROM #info
+WHERE databasename =@TargetDatabase
+and filegroup = @TargetFilegroup
+group by databasename, filegroup
+END
+BEGIN
+IF @total_by_usage  = 1
+SELECT @@servername servername, databasename, usage, sum(sizeMB) as 'sizeMB', sum(freeSpaceMB) as 'freeSpaceMB',
+(sum(freeSpaceMB)/sum(sizeMB))*100 as 'freeSpacePct' FROM #info
+WHERE databasename =@DatabaseN
+and usage= @Usagetype
+group by databasename, usage
+END
+IF @files_by_filegroup  =1
+SELECT * FROM #info
+WHERE    1=1
+        --and (growthMB <> 0 or growthPct <> 0)
+        --and databasename + ';' + ISNULL(filegroup, 'LOG') IN ('CM_TEL;PRIMARY')   
+        and filegroup = @FilegroupN
+        and databasename = @DatabaseN
+        --and filename LIKE ('I:\DataRiv5\%') 
+        --and filename NOT LIKE ('P:\Data2_5\%') 
+        --and usage = 'data only'
+END
+BEGIN
+IF @files_by_usage =  1
+SELECT * FROM #info
+WHERE    1=1
+        --and (growthMB <> 0 or growthPct <> 0)
+        --and databasename + ';' + ISNULL(filegroup, 'LOG') IN ('CM_TEL;PRIMARY')   
+        --and filegroup = @FilegroupN
+        and databasename = @DatabaseN
+        --and filename LIKE ('I:\DataRiv5\%') 
+        --and filename NOT LIKE ('P:\Data2_5\%') 
+        and usage = @Usagetype 
+END
+/*BEGIN
+IF @files_by_filename = 1
+END*/
+END
 -- =======================================================================================
 -- RECETARIO DE COMANDOS ADMINISTRATIVOS COMUNES (PARA REFERENCIA)
 -- Descomente y modifique la sección que necesite utilizar.
