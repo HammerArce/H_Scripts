@@ -108,8 +108,8 @@ BEGIN
 IF @total_by_usage  = 1
 SELECT @@servername servername, databasename, usage, sum(sizeMB) as 'sizeMB', sum(freeSpaceMB) as 'freeSpaceMB',
 (sum(freeSpaceMB)/sum(sizeMB))*100 as 'freeSpacePct' FROM #info
-WHERE databasename =@TargetDatabase
-and usage= @TargetUsage
+WHERE (@TargetDatabase IS NULL OR databasename = @TargetDatabase)
+and (@TargetUsage IS NULL OR usage = @TargetUsage)
 group by databasename, usage
 END
 /*--------------------files_by_filegroup--------------------*/
@@ -119,8 +119,8 @@ SELECT * FROM #info
 WHERE    1=1
         --and (growthMB <> 0 or growthPct <> 0)
         --and databasename + ';' + ISNULL(filegroup, 'LOG') IN ('CM_TEL;PRIMARY')   
-        and filegroup = @TargetFilegroup
-        and databasename = @TargetDatabase
+        AND (@TargetFilegroup IS NULL OR filegroup = @TargetFilegroup)
+        AND (@TargetDatabase IS NULL OR databasename = @TargetDatabase)
         --and filename LIKE ('I:\DataRiv5\%') 
         --and filename NOT LIKE ('P:\Data2_5\%') 
         --and usage = 'data only'
@@ -133,10 +133,10 @@ WHERE    1=1
         --and (growthMB <> 0 or growthPct <> 0)
         --and databasename + ';' + ISNULL(filegroup, 'LOG') IN ('CM_TEL;PRIMARY')   
         --and filegroup = @FilegroupN
-        and databasename = @TargetDatabase
+        AND (@TargetDatabase IS NULL OR databasename = @TargetDatabase)
         --and filename LIKE ('I:\DataRiv5\%') 
         --and filename NOT LIKE ('P:\Data2_5\%') 
-        and usage = @TargetUsage 
+        and (@TargetUsage IS NULL OR usage = @TargetUsage)
 END
 /*--------------------files_by_filename--------------------*/
 /*BEGIN
