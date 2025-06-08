@@ -26,12 +26,8 @@ DECLARE
 DECLARE
 	@ALLDBFILES as bit = 1,
 	@total_filegroup as bit = 1,
-	@total_by_usage as bit = 1,
-	@files_by_filegroup as bit =1,
-	@files_by_usage as bit =  1,
-	@files_by_filename as bit = 1
-
---DECLARE @ShowSystemDBs  BIT         = 0;    -- Ponga 1 para incluir 'master', 'model', 'msdb', 'tempdb'. Ponga 0 para excluirlas.
+	@total_by_usage as bit = 1
+        --@ShowSystemDBs as bit    = 0  -- Ponga 1 para incluir 'master', 'model', 'msdb', 'tempdb'. Ponga 0 para excluirlas.
 
 
 
@@ -92,7 +88,8 @@ WHERE 1=1
     AND (@TargetFilegroup IS NULL OR filegroup = @TargetFilegroup)
     AND (@TargetUsage IS NULL OR usage = @TargetUsage)
     AND (@TargetFilenameLike IS NULL OR filename LIKE @TargetFilenameLike)
-    AND (@TargetFilenameNotLike IS NULL OR filename NOT LIKE @TargetFilenameNotLike);
+    AND (@TargetFilenameNotLike IS NULL OR filename NOT LIKE @TargetFilenameNotLike)
+    ORDER BY databasename ASC;
 END
 /*--------------------total_filegroup--------------------*/
 BEGIN
@@ -112,36 +109,7 @@ WHERE (@TargetDatabase IS NULL OR databasename = @TargetDatabase)
 and (@TargetUsage IS NULL OR usage = @TargetUsage)
 group by databasename, usage
 END
-/*--------------------files_by_filegroup--------------------*/
-BEGIN
-IF @files_by_filegroup  = 1
-SELECT * FROM #info
-WHERE    1=1
-        --and (growthMB <> 0 or growthPct <> 0)
-        --and databasename + ';' + ISNULL(filegroup, 'LOG') IN ('CM_TEL;PRIMARY')   
-        AND (@TargetFilegroup IS NULL OR filegroup = @TargetFilegroup)
-        AND (@TargetDatabase IS NULL OR databasename = @TargetDatabase)
-        --and filename LIKE ('I:\DataRiv5\%') 
-        --and filename NOT LIKE ('P:\Data2_5\%') 
-        --and usage = 'data only'
-END
-/*--------------------files_by_usage--------------------*/
-BEGIN
-IF @files_by_usage =  1
-SELECT * FROM #info
-WHERE    1=1
-        --and (growthMB <> 0 or growthPct <> 0)
-        --and databasename + ';' + ISNULL(filegroup, 'LOG') IN ('CM_TEL;PRIMARY')   
-        --and filegroup = @FilegroupN
-        AND (@TargetDatabase IS NULL OR databasename = @TargetDatabase)
-        --and filename LIKE ('I:\DataRiv5\%') 
-        --and filename NOT LIKE ('P:\Data2_5\%') 
-        and (@TargetUsage IS NULL OR usage = @TargetUsage)
-END
-/*--------------------files_by_filename--------------------*/
-/*BEGIN
-IF @files_by_filename = 1
-END*/
+
 END
 -- =======================================================================================
 -- RECETARIO DE COMANDOS ADMINISTRATIVOS COMUNES (PARA REFERENCIA)
