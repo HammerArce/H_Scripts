@@ -1,195 +1,190 @@
-BEGIN
+/****************************************************************************************
+*                                                                                       *
+*   SCRIPT PARA VERIFICAR LA INFORMACIÓN Y AUTOGROWTH DE LOS ARCHIVOS DE BASES DE DATOS *
+*                                                                                       *
+*   Descripción:                                                                        *
+*   Este script recopila información detallada sobre los archivos de datos (.mdf, .ndf) *
+*   y de log (.ldf) de todas las bases de datos en la instancia de SQL Server.          *
+*                                                                                       *
+*   HAMMER	- 2025																        *
+****************************************************************************************/
+USE master;
+GO
+-- =======================================================================================
+-- >> VARIABLES
+-- =======================================================================================
+DECLARE 
+    @TargetDatabase        VARCHAR(128) = 'AppVentasMovistar',       -- Ejemplo: 'AppVentasMovistar', o NULL para todas las bases de datos.
+    @TargetFilegroup       VARCHAR(128) = 'PRIMARY',                 -- Example: 'PRIMARY' Filegroup to filter in queries
+    @TargetUsage           VARCHAR(25)  = 'log only',                -- Example: 'data only' or 'log only'
+    @TargetFilenameLike    VARCHAR(1000) = 'I:\DataRiv5\%',          -- Example: 'I:\DataRiv5\%' For LIKE filtering on filename
+    @TargetFilenameNotLike VARCHAR(1000) = 'P:\Data2_5\%',           -- Example: 'P:\Data2_5\%' For NOT LIKE filtering on filename
+    @ShowGrowthFilesOnly   BIT = 0                                   -- 1 = Only files with growth, 0 = All
+-- =======================================================================================
+-- MENU DE SELECCION (set to 0 to skip or 1 to activate)
+-- =======================================================================================
+DECLARE
+	@ALLDBFILES as bit = 1,
+	@total_filegroup as bit = 1,
+	@total_by_usage as bit = 1,
+	@files_by_filegroup as bit =1,
+	@files_by_usage as bit =  1,
+	@files_by_filename as bit = 1
 
-	--Hammer  Santamaria
-	--2025
-	--Menu Log sizes
-use master;
-DECLARE @DatabaseN AS VARCHAR(max);
-DECLARE @FilegroupN AS VARCHAR(max);
-DECLARE @Usagetype AS VARCHAR(max);
-DECLARE @FilenameN AS VARCHAR(max);
-DECLARE @Metodo_Manual AS VARCHAR(max);
-SET @Metodo_Manual = 'Cambiar parametros de forma Manual';
+--DECLARE @ShowSystemDBs  BIT         = 0;    -- Ponga 1 para incluir 'master', 'model', 'msdb', 'tempdb'. Ponga 0 para excluirlas.
 
-END
--------------------SELECTION MENU------------------------------
--- set to 0 to skip or 1 to activate
-DECLARE @total_filegroup as bit = 1
-DECLARE @total_by_usage as bit = 1 
-DECLARE @files_by_filegroup as bit =1
-DECLARE @files_by_usage as bit =  1
-DECLARE @files_by_filename as bit = 1
------------Parameters----------------
-SET @DatabaseN = 'Tren_Digital';
-SET @FilegroupN = 'FG_2025';
-SET @Usagetype = 'log only';
-SET @FilenameN = '';
---*************************************************
 
---Declare table info
-BEGIN
---PRINT @V_inst_ip_server
 
--- Drop temporary table if it exists
+-- =======================================================================================
+-- INICIO DE LA LÓGICA DEL SCRIPT (No es necesario modificar)
+-- =======================================================================================
+/*-------------------- Drop temp table if it exists --------------------*/
 IF OBJECT_ID('tempdb..#info') IS NOT NULL
-       DROP TABLE #info;
--- Create table to house database file information
+    DROP TABLE #info;
+    
+/*-------------------- Create temp table for database file info --------------------*/
 CREATE TABLE #info (
-     databasename VARCHAR(128)
-     ,name VARCHAR(128)
-    ,fileid INT
-    ,filename VARCHAR(1000)
-    ,filegroup VARCHAR(128)
-    ,sizeMB decimal (18,2)
-    ,freeSpaceMB decimal (18,2)
-    ,freeSpacePct decimal (18,2)
-    ,maxsizeMB VARCHAR(25)
-    ,growthMB INT
-    ,growthPct INT
-    ,usage VARCHAR(25));
--- Get database file information for each database   
+    databasename VARCHAR(128),
+    name         VARCHAR(128),
+    fileid       INT,
+    filename     VARCHAR(1000),
+    filegroup    VARCHAR(128),
+    sizeMB       DECIMAL(18,2),
+    freeSpaceMB  DECIMAL(18,2),
+    freeSpacePct DECIMAL(18,2),
+    maxsizeMB    VARCHAR(25),
+    growthMB     INT,
+    growthPct    INT,
+    usage        VARCHAR(25)
+);
+
+/*-------------------- Populate temp table for all databases --------------------*/
 SET NOCOUNT ON; 
 INSERT INTO #info
-EXEC sp_MSforeachdb 'use [?] 
-select ''?'', RTRIM(LTRIM(name)),  fileid, filename,
-filegroup = filegroup_name(groupid),
-''sizeMB'' = convert (decimal(18,2), size) / 128,
-''FreeMB'' = convert (decimal (18,2), size) / 128.0 - convert (decimal (18,2), FILEPROPERTY(name, ''SpaceUsed'')) / 128.0, 
-''FreePct'' = (convert (decimal (18,2), size) / 128.0 - convert (decimal (18,2), FILEPROPERTY(name, ''SpaceUsed'')) / 128.0) * 100 / (convert (decimal(18,2), size) / 128),
-''maxsizeMB'' = (case maxsize when -1 then N''Unlimited''
-else
-convert(nvarchar(15), convert (bigint, maxsize) * 8 / 1024) end),
-''growthMB'' = (case status & 0x100000 when 0x100000 then NULL
-else convert (bigint, growth) * 8 / 1024 end),
-''growthPct'' = (case status & 0x100000 when 0x100000 then growth
-else NULL end),
-''usage'' = (case status & 0x40 when 0x40 then ''log only'' else ''data only'' end)
-from sysfiles
+EXEC sp_MSforeachdb N'
+USE [?];
+SELECT 
+    ''?'' AS databasename, 
+    RTRIM(LTRIM(name)),  
+    fileid, 
+    filename,
+    filegroup = filegroup_name(groupid),
+    sizeMB = CONVERT(DECIMAL(18,2), size) / 128,
+    FreeMB = CONVERT(DECIMAL(18,2), size) / 128.0 - CONVERT(DECIMAL(18,2), FILEPROPERTY(name, ''SpaceUsed'')) / 128.0, 
+    FreePct = (CONVERT(DECIMAL(18,2), size) / 128.0 - CONVERT(DECIMAL(18,2), FILEPROPERTY(name, ''SpaceUsed'')) / 128.0) * 100 / (CONVERT(DECIMAL(18,2), size) / 128),
+    maxsizeMB = (CASE maxsize WHEN -1 THEN N''Unlimited'' ELSE CONVERT(NVARCHAR(15), CONVERT(BIGINT, maxsize) * 8 / 1024) END),
+    growthMB = (CASE status & 0x100000 WHEN 0x100000 THEN NULL ELSE CONVERT(BIGINT, growth) * 8 / 1024 END),
+    growthPct = (CASE status & 0x100000 WHEN 0x100000 THEN growth ELSE NULL END),
+    usage = (CASE status & 0x40 WHEN 0x40 THEN ''log only'' ELSE ''data only'' END)
+FROM sysfiles
 ';
-END
---------------------------------------
---total_filegroup
+-- =======================================================================================
+-- Filtered Queries (No es necesario modificar)
+-- =======================================================================================
+/*--------------------ALL FILES--------------------*/
 BEGIN
-IF @total_filegroup = 1
-BEGIN
-SELECT @@servername servername, databasename, filegroup, sum(sizeMB) as 'sizeMB', sum(freeSpaceMB) as 'freeSpaceMB',
-(sum(freeSpaceMB)/sum(sizeMB))*100 as 'freeSpacePct' FROM #info
-WHERE databasename =@DatabaseN
-and filegroup = @FilegroupN
-group by databasename, filegroup
-END
-END
-------------------------------------
---total_by_usage
-BEGIN
-IF @total_by_usage = 1
-BEGIN
-SELECT @@servername servername, databasename, usage, sum(sizeMB) as 'sizeMB', sum(freeSpaceMB) as 'freeSpaceMB',
-(sum(freeSpaceMB)/sum(sizeMB))*100 as 'freeSpacePct' FROM #info
-WHERE databasename =@DatabaseN
-and usage= @Usagetype
-group by databasename, usage
-END
-END
--------------------------------------
---files by filegroup
-BEGIN
-IF @files_by_filegroup = 1
-BEGIN
+IF @ALLDBFILES = 1
 SELECT * FROM #info
-WHERE    1=1
-        --and (growthMB <> 0 or growthPct <> 0)
-        --and databasename + ';' + ISNULL(filegroup, 'LOG') IN ('CM_TEL;PRIMARY')   
-        and filegroup = @FilegroupN
-        and databasename = @DatabaseN
-        --and filename LIKE ('I:\DataRiv5\%') 
-        --and filename NOT LIKE ('P:\Data2_5\%') 
-        --and usage = 'data only'
-END
-END
------------------------------------
---files by usage
-BEGIN
-IF @files_by_usage = 1
-BEGIN
-SELECT * FROM #info
-WHERE    1=1
-        --and (growthMB <> 0 or growthPct <> 0)
-        --and databasename + ';' + ISNULL(filegroup, 'LOG') IN ('CM_TEL;PRIMARY')   
-        --and filegroup = @FilegroupN
-        and databasename = @DatabaseN
-        --and filename LIKE ('I:\DataRiv5\%') 
-        --and filename NOT LIKE ('P:\Data2_5\%') 
-        and usage = @Usagetype 
-END
+WHERE 1=1
+    AND (@ShowGrowthFilesOnly = 0 OR (ISNULL(growthMB,0) <> 0 OR ISNULL(growthPct,0) <> 0))
+    AND (@TargetDatabase IS NULL OR databasename = @TargetDatabase)
+    AND (@TargetFilegroup IS NULL OR filegroup = @TargetFilegroup)
+    AND (@TargetUsage IS NULL OR usage = @TargetUsage)
+    AND (@TargetFilenameLike IS NULL OR filename LIKE @TargetFilenameLike)
+    AND (@TargetFilenameNotLike IS NULL OR filename NOT LIKE @TargetFilenameNotLike);
 END
 
---*****************************Modifications*********************
--------------------------------
---Add Size to File
+-- =======================================================================================
+-- RECETARIO DE COMANDOS ADMINISTRATIVOS COMUNES (PARA REFERENCIA)
+-- Descomente y modifique la sección que necesite utilizar.
+-- =======================================================================================
+
 /*
-ALTER DATABASE [smsws_db] MODIFY FILE (NAME = N'smsws_db_Indices5', SIZE = 16293 MB)
-*/
--------------------------------
---Create New File
-/*
-ALTER DATABASE [@DatabaseN] ADD FILE ( NAME = N'Recargas4', FILENAME = N'F:\Data\Recargas4.ndf',  --CREAR UN NUEVO DATAFILE 
-SIZE = 4GB , FILEGROWTH = 256MB ) TO FILEGROUP [PRIMARY]
-*/
--------------------------------
---Shrink File
-/*
-USE tempdb;
+-- ---------------------------------------------------------------------------------------
+-- MODIFICAR ARCHIVOS (TAMAÑO, CRECIMIENTO, ETC.)
+-- ---------------------------------------------------------------------------------------
+
+-- Modificar el tamaño inicial de un archivo de datos
+ALTER DATABASE [NombreDB] MODIFY FILE (NAME = N'NombreLogicoArchivo', SIZE = 2048MB);
+
+-- Modificar el crecimiento de un archivo (a un valor fijo en MB)
+ALTER DATABASE [NombreDB] MODIFY FILE (NAME = N'NombreLogicoArchivo', FILEGROWTH = 512MB);
+
+-- Modificar el crecimiento de un archivo (a un porcentaje)
+ALTER DATABASE [NombreDB] MODIFY FILE (NAME = N'NombreLogicoArchivo', FILEGROWTH = 10%);
+
+-- Desactivar el autogrowth (NO RECOMENDADO para la mayoría de los casos)
+ALTER DATABASE [NombreDB] MODIFY FILE (NAME = N'NombreLogicoArchivo', FILEGROWTH = 0);
+
+
+-- ---------------------------------------------------------------------------------------
+-- AÑADIR NUEVOS ARCHIVOS A LA BASE DE DATOS
+-- ---------------------------------------------------------------------------------------
+
+-- Añadir un nuevo archivo de datos a un filegroup existente
+ALTER DATABASE [NombreDB]
+ADD FILE (
+    NAME = N'NombreLogicoNuevoArchivo',
+    FILENAME = N'D:\Ruta\A\Mi\Archivo.ndf',
+    SIZE = 4GB,
+    FILEGROWTH = 512MB
+) TO FILEGROUP [PRIMARY]; -- O el filegroup que corresponda
+
+-- Añadir un nuevo archivo de log
+ALTER DATABASE [NombreDB]
+ADD LOG FILE (
+    NAME = N'NombreLogicoNuevoLog',
+    FILENAME = N'L:\Ruta\A\Mi\Log.ldf',
+    SIZE = 1GB,
+    FILEGROWTH = 256MB
+);
+
+
+-- ---------------------------------------------------------------------------------------
+-- REDUCCIÓN DE ARCHIVOS (SHRINK)
+-- ¡¡¡ USAR CON PRECAUCIÓN !!! Puede causar fragmentación severa en archivos de datos.
+-- ---------------------------------------------------------------------------------------
+
+-- Reducir un archivo de log a un tamaño específico (ej. 256MB)
+-- Es seguro para archivos de LOG si el log_reuse_wait_desc es 'NOTHING'.
+USE [NombreDB];
 GO
-DBCC SHRINKFILE (templog, 256);
+DBCC SHRINKFILE (N'NombreLogicoLog', 256);
 GO
-*/
--------------------------------
--- add or remove growth in the DATAFILE
-/*
-ALTER DATABASE [E2E_PagoNoAplicado_PROD] MODIFY FILE (NAME = N'E2E_PagoNoAplicado_PROD', FILEGROWTH = 64MB) 
-*/
--------------------------------
--- add LOGFILE
-/*
-ALTER DATABASE [Recargas] ADD LOG FILE ( NAME = N'provisional_log1', FILENAME = N'N:\Log\provisional_log1.ldf', 
-SIZE = 512 MB , FILEGROWTH = 64 MB )
+
+-- Reducir un archivo de datos (vaciar el espacio libre al final del archivo)
+USE [NombreDB];
 GO
-*/
--------------------------------
--- see database recovery mode 
-/*
-SELECT    name,
-        DATABASEPROPERTYEX(name, 'RECOVERY') AS modo_recuperacion
-FROM    master..sysdatabases ORDER BY modo_recuperacion, name
-*/
--------------------------------
--- Shrink file
-/*
-SELECT distinct(databasename), COUNT(filename)datafile, IIF(filegroup='PRIMARY', 'PRIMARY', 'LOG')filegroup FROM #info
-WHERE    databasename not in ('master', 'model', 'msdb', 'tempdb')
-group by databasename, filegroup
- 
-select * from sysdatabases //VIEJAS
-select name, log_reuse_wait_desc, recovery_model_desc from sys.databases // NUEVAS
-USE tempdb
+DBCC SHRINKFILE (N'NombreLogicoDatos', TRUNCATEONLY);
 GO
+
+-- Vaciar un archivo para poder eliminarlo (EMPTYFILE)
+USE [NombreDB];
+GO
+DBCC SHRINKFILE (N'ArchivoAEliminar', EMPTYFILE);
+GO
+-- Después de vaciarlo, se puede eliminar
+ALTER DATABASE [NombreDB] REMOVE FILE [ArchivoAEliminar];
+GO
+
+
+-- ---------------------------------------------------------------------------------------
+-- GESTIÓN DE BASES DE DATOS Y CACHÉ
+-- ---------------------------------------------------------------------------------------
+
+-- Ver el modo de recuperación de todas las bases de datos
+SELECT name, recovery_model_desc, log_reuse_wait_desc FROM sys.databases;
+
+-- Cambiar el modo de recuperación de una base de datos
+ALTER DATABASE [NombreDB] SET RECOVERY SIMPLE; -- O FULL, O BULK_LOGGED
+GO
+
+-- Limpiar la caché (solo para entornos de prueba o para solucionar problemas específicos)
 CHECKPOINT;
 GO
- 
-DBCC FREESESSIONCACHE;
+DBCC DROPCLEANBUFFERS;       -- Limpia el buffer pool de datos.
 GO
- 
-DBCC FREEPROCCACHE;
+DBCC FREEPROCCACHE;          -- Limpia el caché de planes de ejecución.
 GO
- 
-DBCC FREESYSTEMCACHE ('ALL');
-GO
- 
-DBCC DROPCLEANBUFFERS;
-GO
-DBCC SHRINKFILE (temp9, 128);
-DBCC SHRINKFILE (temp9, EMPTYFILE);
- 
-ALTER DATABASE HWI_Admin SET RECOVERY SIMPLE 
+
 */
