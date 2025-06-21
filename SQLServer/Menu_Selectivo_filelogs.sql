@@ -166,6 +166,17 @@ ADD LOG FILE (
 -- Es seguro para archivos de LOG si el log_reuse_wait_desc es 'NOTHING'.
 USE [NombreDB];
 GO
+CHECKPOINT;
+GO
+DBCC FREESESSIONCACHE;
+GO
+DBCC FREEPROCCACHE;
+GO
+DBCC FREESYSTEMCACHE ('ALL');
+GO
+DBCC DROPCLEANBUFFERS;
+GO
+
 DBCC SHRINKFILE (N'NombreLogicoLog', 256);
 GO
 
@@ -194,14 +205,6 @@ SELECT name, recovery_model_desc, log_reuse_wait_desc FROM sys.databases;
 
 -- Cambiar el modo de recuperación de una base de datos
 ALTER DATABASE [NombreDB] SET RECOVERY SIMPLE; -- O FULL, O BULK_LOGGED
-GO
-
--- Limpiar la caché (solo para entornos de prueba o para solucionar problemas específicos)
-CHECKPOINT;
-GO
-DBCC DROPCLEANBUFFERS;       -- Limpia el buffer pool de datos.
-GO
-DBCC FREEPROCCACHE;          -- Limpia el caché de planes de ejecución.
 GO
 
 */
