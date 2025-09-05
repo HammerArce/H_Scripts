@@ -12,20 +12,20 @@ SET @V_inst_ip_server = 'sqlusu';
 
 IF @all_repos = 1
 BEGIN
-SELECT * FROM [DBA_Repository].[BaseLine].[Instances_HS_21_03];
+SELECT * FROM [DBA_Repository].[BaseLine].[Instances_HS_09_2025];
 END
 
 IF @instancia = 1
 BEGIN
-SELECT * FROM [DBA_Repository].[BaseLine].[Instances_HS_21_03] where Instance like '%'+@V_inst_ip_server+'%';
+SELECT * FROM [DBA_Repository].[BaseLine].[Instances_HS_09_2025] where Instance like '%'+@V_inst_ip_server+'%';
 END
 
 IF @ips = 1
 BEGIN
-SELECT * FROM [DBA_Repository].[BaseLine].[Instances_HS_21_03] where IP like '%'+@V_inst_ip_server+'%';
+SELECT * FROM [DBA_Repository].[BaseLine].[Instances_HS_09_2025] where IP like '%'+@V_inst_ip_server+'%';
 END
 
 IF @server = 1
 BEGIN
-SELECT * FROM [DBA_Repository].[BaseLine].[Instances_HS_21_03] where Server like '%'+@V_inst_ip_server+'%';
+SELECT * FROM [DBA_Repository].[BaseLine].[Instances_HS_09_2025] where Server like '%'+@V_inst_ip_server+'%';
 END
