@@ -24,6 +24,11 @@ DECLARE @drive VARCHAR(100),
 		@totalSpace INT,
 		@percentFree DECIMAL(5,2),
 		@letter CHAR(1)
+
+DROP TABLE IF EXISTS #drives
+DROP TABLE IF EXISTS #t
+DROP TABLE IF EXISTS #total
+DROP TABLE IF EXISTS #driveTypes
  
 CREATE TABLE #driveTypes
 (
@@ -275,9 +280,5 @@ DEALLOCATE Drive
 --SELECT sum(freeSpace)freeSpace FROM #driveTypes 
 SELECT * FROM #driveTypes ORDER BY drive		
  
-DROP TABLE #drives
-DROP TABLE #t
-DROP TABLE #total
-DROP TABLE #driveTypes
- 
+
 THEEND:
