@@ -279,6 +279,12 @@ DEALLOCATE Drive
 --SELECT	RTRIM(LTRIM(drive)) as drive, freespace, totalspace, CAST((freespace/totalspace * 100) AS DECIMAL(5,2)) as [percent free] FROM	#total
 --SELECT sum(freeSpace)freeSpace FROM #driveTypes 
 SELECT * FROM #driveTypes ORDER BY drive		
- 
+
+-- USE THIS FOR YUKON OR SQL SERVER 2000
+--DROP TABLE  #drives
+--DROP TABLE  #t
+--DROP TABLE  #total
+--DROP TABLE  #driveTypes
 
 THEEND:
+
