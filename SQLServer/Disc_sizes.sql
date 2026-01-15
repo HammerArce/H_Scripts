@@ -296,11 +296,14 @@ DEALLOCATE Drive
 SELECT * FROM #driveTypes ORDER BY drive		
 
 -- USE THIS FOR YUKON OR SQL SERVER 2000
---DROP TABLE  #drives
---DROP TABLE  #t
---DROP TABLE  #total
---DROP TABLE  #driveTypes
+/*
+DROP TABLE  #drives
+DROP TABLE  #t
+DROP TABLE  #total
+DROP TABLE  #driveTypes
+*/
 
 THEEND:
+
 
 
