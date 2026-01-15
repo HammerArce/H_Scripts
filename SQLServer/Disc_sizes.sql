@@ -25,10 +25,25 @@ DECLARE @drive VARCHAR(100),
 		@percentFree DECIMAL(5,2),
 		@letter CHAR(1)
 
+--FOR SQL below 2016
+
+IF OBJECT_ID('tempdb.dbo.#drives', 'U') IS NOT NULL
+  DROP TABLE #drives; 
+IF OBJECT_ID('tempdb.dbo.#t', 'U') IS NOT NULL
+  DROP TABLE #t;
+IF OBJECT_ID('tempdb.dbo.#total', 'U') IS NOT NULL
+  DROP TABLE #total;
+IF OBJECT_ID('tempdb.dbo.#driveTypes', 'U') IS NOT NULL
+  DROP TABLE #driveTypes;
+
+
+--FOR SQL 2016 and newer
+/*
 DROP TABLE IF EXISTS #drives
 DROP TABLE IF EXISTS #t
 DROP TABLE IF EXISTS #total
 DROP TABLE IF EXISTS #driveTypes
+*/
  
 CREATE TABLE #driveTypes
 (
@@ -287,4 +302,5 @@ SELECT * FROM #driveTypes ORDER BY drive
 --DROP TABLE  #driveTypes
 
 THEEND:
+
 
