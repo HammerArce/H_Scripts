@@ -115,3 +115,32 @@ OUTER APPLY
 ORDER BY
     [Begin Time] ASC;
 GO
+
+---------PARA SQL 2000
+SELECT
+    sp.spid                                  AS SPID,
+    sp.blocked                               AS BlockedBy,
+    sp.status                                AS Status,
+    sp.loginame                              AS LoginName,
+    sp.hostname                              AS HostName,
+    sp.program_name                          AS ProgramName,
+    DB_NAME(sp.dbid)                         AS DatabaseName,
+    sp.cmd                                   AS Command,
+    sp.cpu                                   AS CPU_Time,
+    sp.physical_io                           AS Physical_IO,
+    sp.memusage                              AS MemoryUsage,
+    sp.waittime                              AS WaitTime,
+    sp.last_batch                            AS LastBatchTime,
+    sp.open_tran                             AS OpenTransactions,
+    lk.type                                  AS LockType
+    --lk.mode                                  AS LockMode,
+    --lk.request                               AS LockRequest,
+    --lk.status                                AS LockStatus
+FROM master..sysprocesses sp
+LEFT JOIN master..syslocks lk
+    ON sp.spid = lk.spid
+WHERE sp.spid <> @@SPID
+ORDER BY
+    sp.blocked DESC,
+    sp.cpu DESC,
+    sp.physical_io DESC
