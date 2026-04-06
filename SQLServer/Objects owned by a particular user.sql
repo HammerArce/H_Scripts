@@ -1,3 +1,18 @@
+/*
+This will get objects that are owned by your particular user (substitute 'YourUser' of course). The types of objects this query pulls are:
+
+FN = SQL scalar function
+FS = Assembly (CLR) scalar-function
+FT = Assembly (CLR) table-valued function
+IF = SQL inline table-valued function
+P = SQL Stored Procedure
+PC = Assembly (CLR) stored-procedure
+TA = Assembly (CLR) DML trigger
+TF = SQL table-valued-function
+TR = SQL DML trigger
+U = Table (user-defined)
+V = View
+*/
 ;with objects_cte as
 (
     select
