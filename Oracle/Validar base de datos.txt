@@ -1,0 +1,76 @@
+--VALIDACION DE BASES DE DATOS
+
+1.	Verificar el estado de la BD.
+  
+ps -fea | grep pmon
+
+2.	Setearnos en la BD.
+
+. oraenv
+
+3.	ingresamos a la carpeta de monitoreo.
+
+cd monitoreo
+
+5.	ingresar a la base de datos.
+
+sql
+
+6.para verificar el estado de la BD que se encuentre operativa. (Nodos, Ultima vez que se reiniciaron.
+ Procesos y sesiones. Limite y su utilidad. Verificamos si hay datafiles Offline. DiskGroup Críticos. Sesiones activa e inactivas.
+ Running Jobs que se encuentre corriendo. Consumo de CPU)
+
+@revisionbd.sql
+
+7.	(en el SO) para ver los filesystem y su uso que ninguno este alarmado >85 %.
+
+!df -h
+
+8.	Consultamos los disk groups y verificamos su espacios.
+
+@asm.sql
+
+9.	para consultar los tablespaces.
+
+@tbs.sql
+
+10.	En otra consola mientras salen los tablespaces consultamos el Alert Log.
+(en sql)
+Show parameter dump;
+exit
+
+13.	usamos la ruta core_dump_dest, pero salimos de la carpeta cdump y entramos a la carpeta trace
+
+
+15.	listamos y evidenciamos los archivos trc y trm.
+
+ls -ltrh
+
+16.	 revisamos que no haya errores ORA recientemente. Sale fecha y errores. Se pueden evidenciar errores de conexión, pero no afectan la BD.
+
+tail -2000f archivo.trc
+
+17.	para que deje de actualizar en tiempo real.
+
+ctrl + c
+
+18.	cambiar la variable de entorno oracle a +ASM1
+
+ps -ef | grep pmon
+. oraenv
++ASM1
+
+19.	consultar los servicios de cluster.
+
+crsctl stat res -t
+
+20.	 Revisamos la grafica de la BD.
+
+21.	Verificar el consumo de cpu y memoria.
+
+!top
+
+22.	Revisamos si hay algún back up corriendo.
+(en sql)
+@rman.sql
+
